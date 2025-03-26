@@ -1,49 +1,44 @@
+import type { Socket } from "socket.io";
 import express from "express";
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 import http from "http";
 import { Server } from "socket.io";
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-let countClient = 0;
-let countBlock = [false];
 
-app.get('/block', (req: Request, res: Response) => {
-  res.sendFile(__dirname + '/block.html');
+app.get("/", (req: Request, res: Response) => {
+  res.sendFile(__dirname + "/public.html");
 });
 
-io.on('connection', (socket) => {
-  countClient++;
+const totalTables = 18;
+let tables = Array(totalTables).fill(0);
 
-  console.log('a user connected');
+io.on("connection", (socket: Socket) => {
+  console.log("Client Connected");
 
-  io.emit("count_client", countClient);
-  io.emit("count_block", countBlock);
+  socket.emit("update_tables", tables);
 
-  socket.on('add_block', () => {
-    countBlock.push(false);
-    io.emit('count_block', countBlock);
+  socket.on("book_table", (index) => {
+    if (tables[index] === 0) {
+      tables[index] = 1;
+      io.emit("update_tables", tables);
+    }
   });
 
-  socket.on('rmv_block', () => {
-    if (countBlock.length > 0) countBlock.pop();
-    io.emit('count_block', countBlock);
+  socket.on("cancel_booking", (index) => {
+    if (tables[index] === 1) {
+      tables[index] = 0;
+      io.emit("update_tables", tables);
+    }
   });
 
-  socket.on('click_block', (msg) => {
-    var val = countBlock[msg];
-    countBlock[msg] = !val;
-    io.emit('count_block', countBlock);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-    countClient--;
-    io.emit("count_client", countClient);
+  socket.on("disconnect", () => {
+    console.log("Client Disconnected");
   });
 });
 
-server.listen(5000, () => {
-  console.log('listening on *:5000');
+server.listen(3000, () => {
+  console.log("Server running on port 3000");
 });

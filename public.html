@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Reservation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .table {
+            width: 100px;
+            height: 100px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: transform 0.2s ease-in-out, background-color 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            position: relative;
+        }
+        .table:hover {
+            transform: scale(1.1);
+        }
+        .tooltip {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .table:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-6">
+
+    <main class="w-full bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-center text-2xl font-semibold mb-4">Table Reservation</h2>
+        
+        <div id="tableContainer" class="grid grid-cols-3 items-center justify-center gap-8 p-8 h-full rounded-md">
+            
+        </div>
+
+        <div id="info" class="text-center mt-4 text-lg text-gray-700">
+
+        </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const tableContainer = document.getElementById('tableContainer');
+        const totalTables = 18;
+
+        function renderTables(tables) {
+            tableContainer.innerHTML = '';
+
+            for (let index = 0; index < totalTables; index++) {
+                const table = document.createElement('div');
+                table.className = `table rounded-lg w-full text-white ${
+                    tables[index] === 0 ? 'bg-blue-600 hover:bg-blue-600' : 
+                    tables[index] === 1 ? 'bg-red-600' : 'bg-red-600'
+                }`;
+                
+                table.setAttribute('data-table', index);
+                table.addEventListener('click', () => {
+                    if (tables[index] === 0) {
+                        socket.emit('book_table', index);
+                    } else if (tables[index] === 1) {
+                        socket.emit('cancel_booking', index);
+                    }
+                });
+
+                const tooltip = document.createElement('span');
+                tooltip.className = 'tooltip';
+                tooltip.innerText = tables[index] === 0 ? 'Available' : tables[index] === 1 ? 'Booked' : 'Used';
+                table.appendChild(tooltip);
+
+                tableContainer.appendChild(table);
+            }
+        }
+
+        socket.on('update_tables', renderTables);
+    </script>
+
+</body>
+</html>
